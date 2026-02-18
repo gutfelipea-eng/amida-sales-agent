@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Pipeline — Amida AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Pipeline</h1>
+    <p class="subtitle">Kanban view of all prospects</p>
+</div>
+
+<div class="kanban">
+    {% for col in columns %}
+    <div class="kanban-col">
+        <div class="col-header">
+            <span>{{ col.label }}</span>
+            <span>{{ col.prospects | length }}</span>
+        </div>
+        {% for p in col.prospects %}
+        <a href="/prospects/{{ p.id }}" style="text-decoration: none; color: inherit;">
+            <div class="kanban-card">
+                <div class="name">{{ p.full_name }}</div>
+                <div class="title">{{ p.title }}</div>
+                {% if firms.get(p.pe_firm_id) %}
+                <div class="firm">{{ firms[p.pe_firm_id] }}</div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+        {% if not col.prospects %}
+        <div style="padding: 1rem; text-align: center; color: var(--text-dim); font-size: 0.8rem;">Empty</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

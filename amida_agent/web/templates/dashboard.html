@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Amida AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="subtitle">Amida AI Sales Agent overview</p>
+</div>
+
+<div id="dashboard-stats">
+    {% include "partials/dashboard_stats.html" %}
+</div>
+
+<div class="detail-section">
+    <h3>Recent Activity</h3>
+    <div id="activity-feed">
+        {% include "partials/activity_feed.html" %}
+    </div>
+</div>
+{% endblock %}

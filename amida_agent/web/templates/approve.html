@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Approve — Amida AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Approval Queue</h1>
+    <p class="subtitle">{{ drafts | length }} draft{{ 's' if drafts | length != 1 else '' }} awaiting review</p>
+</div>
+
+<div id="approval-list">
+{% if drafts %}
+    {% for draft in drafts %}
+    {% set prospect = prospects.get(draft.prospect_id) %}
+    <div class="draft-card">
+        <div class="header">
+            <div>
+                <div class="prospect-name">
+                    {% if prospect %}
+                        <a href="/prospects/{{ prospect.id }}" class="text-link">{{ prospect.full_name }}</a>
+                    {% else %}
+                        Unknown Prospect
+                    {% endif %}
+                </div>
+                <div class="meta">
+                    {% if prospect %}{{ prospect.title }} · {{ prospect.headline }}{% endif %}
+                </div>
+            </div>
+            <div>
+                <span class="status-badge {{ draft.channel.value }}">{{ draft.channel.value }}</span>
+                <span class="meta"> · Step {{ draft.sequence_step }}</span>
+            </div>
+        </div>
+
+        {% if draft.subject %}
+        <div class="subject">{{ draft.subject }}</div>
+        {% endif %}
+        <div class="body">{{ draft.body }}</div>
+
+        <details style="margin-bottom: 1rem;">
+            <summary style="cursor: pointer; color: var(--text-dim); font-size: 0.85rem;">Edit before approving</summary>
+            <form hx-post="/approve/{{ draft.id }}/approve" hx-target="#approval-list" hx-swap="innerHTML" style="margin-top: 0.75rem;">
+                <textarea name="edited_body">{{ draft.body }}</textarea>
+                <button type="submit" class="btn btn-success">Approve with edits</button>
+            </form>
+        </details>
+
+        <div class="actions">
+            <form hx-post="/approve/{{ draft.id }}/approve" hx-target="#approval-list" hx-swap="innerHTML" style="display: inline;">
+                <button type="submit" class="btn btn-success">Approve</button>
+            </form>
+            <form hx-post="/approve/{{ draft.id }}/reject" hx-target="#approval-list" hx-swap="innerHTML" style="display: inline;">
+                <input type="hidden" name="reason" value="">
+                <button type="submit" class="btn btn-danger">Reject</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="empty-state">
+    <div class="icon">✓</div>
+    <p>All caught up! No drafts pending approval.</p>
+</div>
+{% endif %}
+</div>
+{% endblock %}

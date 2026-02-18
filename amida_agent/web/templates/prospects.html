@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Prospects — Amida AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Prospects</h1>
+    <p class="subtitle">{{ prospects | length }} prospect{{ 's' if prospects | length != 1 else '' }}</p>
+</div>
+
+<div class="filters">
+    <a href="/prospects" class="filter-pill {% if not current_status %}active{% endif %}">All</a>
+    <a href="/prospects?status=new" class="filter-pill {% if current_status == 'new' %}active{% endif %}">New</a>
+    <a href="/prospects?status=researching" class="filter-pill {% if current_status == 'researching' %}active{% endif %}">Researching</a>
+    <a href="/prospects?status=ready" class="filter-pill {% if current_status == 'ready' %}active{% endif %}">Ready</a>
+    <a href="/prospects?status=drafted" class="filter-pill {% if current_status == 'drafted' %}active{% endif %}">Drafted</a>
+    <a href="/prospects?status=approved" class="filter-pill {% if current_status == 'approved' %}active{% endif %}">Approved</a>
+    <a href="/prospects?status=sent" class="filter-pill {% if current_status == 'sent' %}active{% endif %}">Sent</a>
+    <a href="/prospects?status=replied" class="filter-pill {% if current_status == 'replied' %}active{% endif %}">Replied</a>
+    <a href="/prospects?status=meeting" class="filter-pill {% if current_status == 'meeting' %}active{% endif %}">Meeting</a>
+</div>
+
+{% if prospects %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Title</th>
+            <th>Firm</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in prospects %}
+        <tr>
+            <td><a href="/prospects/{{ p.id }}" class="text-link">{{ p.full_name }}</a></td>
+            <td>{{ p.title }}</td>
+            <td>{{ firms.get(p.pe_firm_id, '—') }}</td>
+            <td>
+                <div class="score-bar">
+                    <div class="bar"><div class="fill" style="width: {{ (p.relevance_score * 100) | int }}%"></div></div>
+                    <span>{{ '%.0f' | format(p.relevance_score * 100) }}%</span>
+                </div>
+            </td>
+            <td><span class="status-badge {{ p.status.value }}">{{ p.status.value }}</span></td>
+            <td style="color: var(--text-dim); font-size: 0.85rem;">{{ p.source }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <div class="icon">🔍</div>
+    <p>No prospects yet. Run the scout or add one manually.</p>
+</div>
+{% endif %}
+{% endblock %}

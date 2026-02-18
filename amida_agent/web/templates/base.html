@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Amida AI Sales Agent{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">Amida AI</a>
+        <div class="nav-links">
+            <a href="/dashboard" {% if request.url.path == '/dashboard' or request.url.path == '/' %}class="active"{% endif %}>Dashboard</a>
+            <a href="/prospects" {% if '/prospects' in request.url.path %}class="active"{% endif %}>Prospects</a>
+            <a href="/approve" {% if '/approve' in request.url.path %}class="active"{% endif %}>
+                Approve
+                {% if pending_approval is defined and pending_approval > 0 %}
+                    <span class="badge">{{ pending_approval }}</span>
+                {% endif %}
+            </a>
+            <a href="/pipeline" {% if '/pipeline' in request.url.path %}class="active"{% endif %}>Pipeline</a>
+        </div>
+    </nav>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

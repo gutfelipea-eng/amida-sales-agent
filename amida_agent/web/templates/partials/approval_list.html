@@ -1,0 +1,79 @@
+{% if drafts %}
+    {% for draft in drafts %}
+    {% set prospect = prospects.get(draft.prospect_id) %}
+    <div class="draft-card" id="draft-{{ draft.id }}">
+        <div class="header">
+            <div>
+                <div class="prospect-name">
+                    {% if prospect %}
+                        <a href="/prospects/{{ prospect.id }}" class="text-link">{{ prospect.full_name }}</a>
+                        {% if prospect.relevance_score > 0 %}
+                        <span class="score-inline">{{ '%.0f' | format(prospect.relevance_score * 100) }}%</span>
+                        {% endif %}
+                    {% else %}
+                        Unknown Prospect
+                    {% endif %}
+                </div>
+                <div class="meta">
+                    {% if prospect %}
+                        {{ prospect.title }}
+                        {% if firms.get(prospect.pe_firm_id) %} · {{ firms[prospect.pe_firm_id] }}{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <span class="status-badge {{ draft.channel.value }}">{{ draft.channel.value }}</span>
+                <span class="meta"> · Step {{ draft.sequence_step }}</span>
+                <div class="meta" style="margin-top: 0.25rem;">{{ draft.created_at.strftime('%b %d, %H:%M') }}</div>
+            </div>
+        </div>
+
+        {% if prospect and prospect.dossier %}
+        <details class="dossier-preview">
+            <summary>View dossier</summary>
+            <div class="dossier-content">{{ prospect.dossier }}</div>
+        </details>
+        {% endif %}
+
+        {% if draft.subject %}
+        <div class="subject">{{ draft.subject }}</div>
+        {% endif %}
+        <div class="body">{{ draft.body }}</div>
+
+        <details class="edit-section">
+            <summary>Edit before approving</summary>
+            <form hx-post="/approve/{{ draft.id }}/approve" hx-target="#approval-list" hx-swap="innerHTML" style="margin-top: 0.75rem;">
+                {% if draft.subject %}
+                <label class="edit-label">Subject</label>
+                <input type="text" name="edited_subject" value="{{ draft.subject }}" class="edit-input">
+                {% endif %}
+                <label class="edit-label">Body</label>
+                <textarea name="edited_body">{{ draft.body }}</textarea>
+                <button type="submit" class="btn btn-success">Approve with edits</button>
+            </form>
+        </details>
+
+        <div class="actions">
+            <form hx-post="/approve/{{ draft.id }}/approve" hx-target="#approval-list" hx-swap="innerHTML" style="display: inline;">
+                <button type="submit" class="btn btn-success">Approve</button>
+            </form>
+            <form hx-post="/approve/{{ draft.id }}/regenerate" hx-target="#approval-list" hx-swap="innerHTML" hx-indicator="#regen-spinner-{{ draft.id }}" style="display: inline;">
+                <button type="submit" class="btn btn-primary">Regenerate</button>
+                <span id="regen-spinner-{{ draft.id }}" class="htmx-indicator" style="margin-left: 0.5rem; color: var(--text-dim);">Generating...</span>
+            </form>
+            <details class="reject-details" style="display: inline;">
+                <summary class="btn btn-danger" style="list-style: none;">Reject</summary>
+                <form hx-post="/approve/{{ draft.id }}/reject" hx-target="#approval-list" hx-swap="innerHTML" class="reject-form">
+                    <input type="text" name="reason" placeholder="Rejection reason (optional)" class="edit-input" style="margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-danger" style="margin-top: 0.25rem;">Confirm Reject</button>
+                </form>
+            </details>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="empty-state">
+    <div class="icon">&#10003;</div>
+    <p>All caught up! No drafts pending approval.</p>
+</div>
+{% endif %}

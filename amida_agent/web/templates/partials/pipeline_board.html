@@ -1,0 +1,30 @@
+{% for col in columns %}
+<div class="kanban-col" data-status="{{ col.status }}">
+    <div class="col-header">
+        <span>{{ col.label }}</span>
+        <span class="col-count">{{ col.prospects | length }}</span>
+    </div>
+    {% for p in col.prospects %}
+    <a href="/prospects/{{ p.id }}" style="text-decoration: none; color: inherit;">
+        <div class="kanban-card">
+            <div class="card-top">
+                <div class="name">{{ p.full_name }}</div>
+                {% if p.relevance_score > 0 %}
+                <span class="score-inline">{{ '%.0f' | format(p.relevance_score * 100) }}%</span>
+                {% endif %}
+            </div>
+            <div class="title">{{ p.title }}</div>
+            {% if firms.get(p.pe_firm_id) %}
+            <div class="firm">{{ firms[p.pe_firm_id] }}</div>
+            {% endif %}
+            {% if p.email %}
+            <div class="has-email" title="Email found">@</div>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+    {% if not col.prospects %}
+    <div class="kanban-empty">Empty</div>
+    {% endif %}
+</div>
+{% endfor %}

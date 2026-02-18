@@ -1,0 +1,16 @@
+{% if recent_activity %}
+<ul class="activity-list">
+    {% for log in recent_activity %}
+    <li class="activity-item">
+        <span class="action">{{ log.action | replace('_', ' ') | title }}</span>
+        {% if log.channel %}<span class="status-badge {{ log.channel.value }}" style="margin-left: 0.3rem; font-size: 0.65rem;">{{ log.channel.value }}</span>{% endif %}
+        {% if log.details %}<span style="color: var(--text-dim);"> — {{ log.details }}</span>{% endif %}
+        <div class="time">{{ log.created_at.strftime('%b %d, %H:%M') }}</div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="empty-state">
+    <p>No activity yet. Add some prospects to get started.</p>
+</div>
+{% endif %}

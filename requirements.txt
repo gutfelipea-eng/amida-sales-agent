@@ -1,0 +1,19 @@
+# Core
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlmodel==0.0.22
+pydantic-settings==2.7.1
+jinja2==3.1.5
+python-multipart==0.0.20
+
+# AI
+anthropic==0.44.0
+
+# External APIs
+httpx==0.28.1
+
+# Scheduling
+apscheduler==3.10.4
+
+# Utilities
+python-dotenv==1.0.1

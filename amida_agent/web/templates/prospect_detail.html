@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}{{ prospect.full_name }} — Amida AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h1>{{ prospect.full_name }}</h1>
+            <p class="subtitle">{{ prospect.title }} {% if firm %}· {{ firm.name }}{% endif %}</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span class="status-badge {{ prospect.status.value }}">{{ prospect.status.value }}</span>
+            <form hx-post="/prospects/{{ prospect.id }}/status" hx-target="#status-area" hx-swap="innerHTML" style="display: inline;">
+                <select name="status" onchange="this.form.requestSubmit()" class="status-select">
+                    {% for s in ['new','researching','ready','drafted','approved','sent','replied','meeting','rejected','paused'] %}
+                    <option value="{{ s }}" {% if prospect.status.value == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+    <div id="status-area"></div>
+</div>
+
+<div class="detail-grid">
+    <div>
+        <div class="detail-section">
+            <h3>Profile</h3>
+            <div class="field">
+                <div class="label">Relevance Score</div>
+                <div class="value">
+                    <div class="score-bar">
+                        <div class="bar" style="width: 100px;"><div class="fill" style="width: {{ (prospect.relevance_score * 100) | int }}%"></div></div>
+                        <span>{{ '%.0f' | format(prospect.relevance_score * 100) }}%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <div class="label">Role Type</div>
+                <div class="value">{{ prospect.role_type.value }}</div>
+            </div>
+            <div class="field">
+                <div class="label">Location</div>
+                <div class="value">{{ prospect.location or '—' }}</div>
+            </div>
+            <div class="field">
+                <div class="label">Email</div>
+                <div class="value">{{ prospect.email or '—' }}</div>
+            </div>
+            {% if prospect.linkedin_url %}
+            <div class="field">
+                <div class="label">LinkedIn</div>
+                <div class="value"><a href="{{ prospect.linkedin_url }}" target="_blank" class="text-link">View Profile</a></div>
+            </div>
+            {% endif %}
+            <div class="field">
+                <div class="label">Source</div>
+                <div class="value">{{ prospect.source or '—' }}</div>
+            </div>
+            {% if prospect.headline %}
+            <div class="field">
+                <div class="label">Headline</div>
+                <div class="value">{{ prospect.headline }}</div>
+            </div>
+            {% endif %}
+            {% if prospect.hired_date %}
+            <div class="field">
+                <div class="label">Hired Date</div>
+                <div class="value">{{ prospect.hired_date.strftime('%b %Y') }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if score_breakdown %}
+        <div class="detail-section">
+            <h3>Score Breakdown</h3>
+            {% for factor, value in score_breakdown.items() %}
+            <div class="score-factor">
+                <div class="factor-header">
+                    <span class="factor-name">{{ factor | replace('_', ' ') | title }}</span>
+                    <span class="factor-value">{{ '%.0f' | format(value * 100) }}%</span>
+                </div>
+                <div class="factor-bar"><div class="factor-fill" style="width: {{ (value * 100) | int }}%"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if firm %}
+        <div class="detail-section">
+            <h3>PE Firm</h3>
+            <div class="field">
+                <div class="label">Name</div>
+                <div class="value">{{ firm.name }}</div>
+            </div>
+            {% if firm.hq_city or firm.country %}
+            <div class="field">
+                <div class="label">HQ</div>
+                <div class="value">{{ firm.hq_city }}{% if firm.hq_city and firm.country %}, {% endif %}{{ firm.country }}</div>
+            </div>
+            {% endif %}
+            {% if firm.aum_billion_eur %}
+            <div class="field">
+                <div class="label">AUM</div>
+                <div class="value">€{{ firm.aum_billion_eur }}B</div>
+            </div>
+            {% endif %}
+            {% if firm.sectors %}
+            <div class="field">
+                <div class="label">Sectors</div>
+                <div class="value">{{ firm.sectors }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if education %}
+        <div class="detail-section">
+            <h3>Education</h3>
+            {% for edu in education %}
+            <div class="timeline-item">
+                <div class="timeline-title">{{ edu.get('school', edu.get('institution', '')) }}</div>
+                <div class="timeline-subtitle">{{ edu.get('degree', '') }} {{ edu.get('field', edu.get('field_of_study', '')) }}</div>
+                {% if edu.get('start_date') or edu.get('end_date') %}
+                <div class="timeline-date">{{ edu.get('start_date', '') }} — {{ edu.get('end_date', '') }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if experience %}
+        <div class="detail-section">
+            <h3>Experience</h3>
+            {% for exp in experience %}
+            <div class="timeline-item">
+                <div class="timeline-title">{{ exp.get('title', '') }}</div>
+                <div class="timeline-subtitle">{{ exp.get('company', exp.get('company_name', '')) }}</div>
+                {% if exp.get('start_date') or exp.get('end_date') %}
+                <div class="timeline-date">{{ exp.get('start_date', '') }} — {{ exp.get('end_date', 'Present') }}</div>
+                {% endif %}
+                {% if exp.get('description') %}
+                <div class="timeline-desc">{{ exp.get('description') }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <div class="detail-section">
+            <h3>Dossier</h3>
+            {% if prospect.dossier %}
+            <div class="dossier">{{ prospect.dossier }}</div>
+            {% else %}
+            <div class="empty-state" style="padding: 1.5rem;">
+                <p>No dossier yet. Research this prospect to generate one.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if prospect.summary %}
+        <div class="detail-section">
+            <h3>Summary</h3>
+            <p style="font-size: 0.9rem; line-height: 1.6;">{{ prospect.summary }}</p>
+        </div>
+        {% endif %}
+
+        <div class="detail-section">
+            <h3>Outreach History</h3>
+            {% if drafts %}
+            {% for draft in drafts %}
+            <div class="outreach-item">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <span>
+                        <span class="status-badge {{ draft.channel.value }}">{{ draft.channel.value }}</span>
+                        <span style="font-weight: 600; margin-left: 0.5rem;">Step {{ draft.sequence_step }}</span>
+                    </span>
+                    <span style="font-size: 0.75rem; color: var(--text-dim);">{{ draft.created_at.strftime('%b %d, %H:%M') }}</span>
+                </div>
+                {% if draft.subject %}
+                <div style="font-weight: 500; color: var(--accent); margin-bottom: 0.25rem;">{{ draft.subject }}</div>
+                {% endif %}
+                <details>
+                    <summary style="font-size: 0.8rem; color: var(--text-dim); cursor: pointer;">View message</summary>
+                    <div class="outreach-body">{{ draft.edited_body or draft.body }}</div>
+                </details>
+                <div style="margin-top: 0.35rem;">
+                    {% if draft.approved is none %}
+                    <span class="status-badge drafted">pending</span>
+                    {% elif draft.approved %}
+                    <span class="status-badge approved">approved</span>
+                    {% else %}
+                    <span class="status-badge rejected">rejected</span>
+                    {% if draft.rejection_reason %}
+                    <span style="font-size: 0.75rem; color: var(--text-dim); margin-left: 0.5rem;">{{ draft.rejection_reason }}</span>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="color: var(--text-dim); font-size: 0.85rem;">No outreach yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="detail-section">
+            <h3>Activity Log</h3>
+            {% if activity %}
+            <ul class="activity-list">
+                {% for a in activity %}
+                <li class="activity-item">
+                    <span class="action">{{ a.action | replace('_', ' ') | title }}</span>
+                    {% if a.channel %}<span class="status-badge {{ a.channel.value }}" style="margin-left: 0.3rem; font-size: 0.65rem;">{{ a.channel.value }}</span>{% endif %}
+                    {% if a.details %}<span style="color: var(--text-dim);"> — {{ a.details }}</span>{% endif %}
+                    <div class="time">{{ a.created_at.strftime('%b %d, %H:%M') }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color: var(--text-dim); font-size: 0.85rem;">No activity recorded.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
