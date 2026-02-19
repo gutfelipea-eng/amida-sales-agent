@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from amida_agent.database import init_db
+from amida_agent.scheduler.jobs import start_scheduler, stop_scheduler
 from amida_agent.web.routes.dashboard import router as dashboard_router
 from amida_agent.web.routes.prospects import router as prospects_router
 from amida_agent.web.routes.approve import router as approve_router
@@ -26,3 +27,9 @@ app.include_router(pipeline_router, prefix="/pipeline")
 @app.on_event("startup")
 def on_startup():
     init_db()
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+def on_shutdown():
+    stop_scheduler()

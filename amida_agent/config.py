@@ -33,5 +33,10 @@ class Settings(BaseSettings):
     dashboard_host: str = "127.0.0.1"
     dashboard_port: int = 8000
 
+    # Scout thresholds
+    enrichment_threshold: float = 0.40
+    notification_threshold: float = 0.65
+    scout_news_interval_hours: int = 12
+
 
 settings = Settings()
