@@ -8,6 +8,7 @@ Schedule:
 
 import asyncio
 import logging
+import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -21,57 +22,68 @@ _scheduler: BackgroundScheduler | None = None
 
 
 def _run_async(coro):
-    """Run an async coroutine from a sync APScheduler job."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(coro)
-        else:
-            loop.run_until_complete(coro)
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    """Run an async coroutine from a sync APScheduler job in a daemon thread."""
+    def _thread_target():
         try:
-            loop.run_until_complete(coro)
-        finally:
-            loop.close()
+            asyncio.run(coro)
+        except Exception:
+            logger.exception("Async job failed")
+
+    t = threading.Thread(target=_thread_target, daemon=True)
+    t.start()
+    t.join()
 
 
 def _job_full_scan():
     """Scheduled job: run all scouts."""
-    from amida_agent.scout.pipeline import run_full_scan
-    logger.info("Scheduled job: full_scan starting")
-    _run_async(run_full_scan())
+    try:
+        from amida_agent.scout.pipeline import run_full_scan
+        logger.info("Scheduled job: full_scan starting")
+        _run_async(run_full_scan())
+    except Exception:
+        logger.exception("Scheduled job full_scan failed")
 
 
 def _job_people_search():
     """Scheduled job: people search only."""
-    from amida_agent.scout.people_search import search_all_firms
-    logger.info("Scheduled job: people_search starting")
-    _run_async(search_all_firms())
+    try:
+        from amida_agent.scout.people_search import search_all_firms
+        logger.info("Scheduled job: people_search starting")
+        _run_async(search_all_firms())
+    except Exception:
+        logger.exception("Scheduled job people_search failed")
 
 
 def _job_news_monitor():
     """Scheduled job: news monitor only."""
-    from amida_agent.scout.news_monitor import scan_all_firms
-    logger.info("Scheduled job: news_monitor starting")
-    _run_async(scan_all_firms())
+    try:
+        from amida_agent.scout.news_monitor import scan_all_firms
+        logger.info("Scheduled job: news_monitor starting")
+        _run_async(scan_all_firms())
+    except Exception:
+        logger.exception("Scheduled job news_monitor failed")
 
 
 def _job_sequence_check():
     """Scheduled job: check and progress email sequences."""
-    from amida_agent.outreach.sequence_manager import check_sequence_progression
-    logger.info("Scheduled job: sequence_check starting")
-    result = check_sequence_progression()
-    logger.info("Scheduled job: sequence_check done — %s", result)
+    try:
+        from amida_agent.outreach.sequence_manager import check_sequence_progression
+        logger.info("Scheduled job: sequence_check starting")
+        result = check_sequence_progression()
+        logger.info("Scheduled job: sequence_check done — %s", result)
+    except Exception:
+        logger.exception("Scheduled job sequence_check failed")
 
 
 def _job_sync_smartlead():
     """Scheduled job: sync reply/open status from Smartlead."""
-    from amida_agent.outreach.sequence_manager import sync_smartlead_statuses
-    logger.info("Scheduled job: sync_smartlead starting")
-    result = sync_smartlead_statuses()
-    logger.info("Scheduled job: sync_smartlead done — %s", result)
+    try:
+        from amida_agent.outreach.sequence_manager import sync_smartlead_statuses
+        logger.info("Scheduled job: sync_smartlead starting")
+        result = sync_smartlead_statuses()
+        logger.info("Scheduled job: sync_smartlead done — %s", result)
+    except Exception:
+        logger.exception("Scheduled job sync_smartlead failed")
 
 
 def start_scheduler() -> BackgroundScheduler:

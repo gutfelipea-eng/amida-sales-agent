@@ -1,3 +1,5 @@
+import logging
+import threading
 from datetime import datetime
 
 from fastapi import APIRouter, Form, Request
@@ -14,6 +16,8 @@ from amida_agent.models import (
     ProspectStatus,
 )
 from amida_agent.web.deps import templates
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -95,11 +99,20 @@ def approve_draft(
             if prospect else f"Draft {draft_id} approved",
         )
 
-        # Trigger send for email channel
+        # Trigger send for email channel in background thread
         if draft.channel == Channel.email:
-            from amida_agent.outreach.email_sender import send_approved_draft
-            send_approved_draft(draft.id)
+            _draft_id = draft.id
 
+            def _bg_send():
+                try:
+                    from amida_agent.outreach.email_sender import send_approved_draft
+                    send_approved_draft(_draft_id)
+                except Exception:
+                    logger.exception("Background send failed for draft %d", _draft_id)
+
+            threading.Thread(target=_bg_send, daemon=True).start()
+
+        session.expire_all()
         drafts, prospects, firms = _get_queue_context(session)
 
     return templates.TemplateResponse("partials/approval_list.html", {

@@ -43,7 +43,7 @@ def check_sequence_progression() -> dict:
     from amida_agent.ai.composer import compose_email
     from amida_agent.outreach.email_sender import fetch_lead_status
 
-    step_delays = _get_step_delays()
+    step_delays = settings.step_delays
     composed = 0
     replied = 0
     skipped = 0
@@ -167,39 +167,36 @@ def check_sequence_progression() -> dict:
 
 def handle_reply(prospect_id: int, session=None) -> None:
     """Mark a prospect as replied and stop the sequence."""
-    own_session = session is None
+    if session is not None:
+        _handle_reply_impl(prospect_id, session)
+    else:
+        with get_session() as own_session:
+            _handle_reply_impl(prospect_id, own_session)
+            own_session.commit()
 
-    if own_session:
-        session = get_session().__enter__()
 
-    try:
-        prospect = session.get(Prospect, prospect_id)
-        if not prospect:
-            logger.error("Prospect %d not found", prospect_id)
-            return
+def _handle_reply_impl(prospect_id: int, session) -> None:
+    """Internal: mark prospect as replied using the provided session."""
+    prospect = session.get(Prospect, prospect_id)
+    if not prospect:
+        logger.error("Prospect %d not found", prospect_id)
+        return
 
-        prospect.status = ProspectStatus.replied
-        prospect.updated_at = datetime.utcnow()
+    prospect.status = ProspectStatus.replied
+    prospect.updated_at = datetime.utcnow()
 
-        session.add(ActivityLog(
-            prospect_id=prospect_id,
-            action="reply_received",
-            channel=Channel.email,
-            details=json.dumps({"previous_status": "sent"}),
-        ))
+    session.add(ActivityLog(
+        prospect_id=prospect_id,
+        action="reply_received",
+        channel=Channel.email,
+        details=json.dumps({"previous_status": "sent"}),
+    ))
 
-        if own_session:
-            session.commit()
+    logger.info("Prospect %d marked as replied", prospect_id)
 
-        logger.info("Prospect %d marked as replied", prospect_id)
-
-        # Notify
-        from amida_agent.notifications.notifier import notify_reply
-        notify_reply(prospect.full_name)
-
-    finally:
-        if own_session:
-            session.__exit__(None, None, None)
+    # Notify
+    from amida_agent.notifications.notifier import notify_reply
+    notify_reply(prospect.full_name)
 
 
 def get_sequence_status(prospect_id: int) -> dict:
@@ -314,10 +311,3 @@ def _has_reply(smartlead_status: dict) -> bool:
     )
 
 
-def _get_step_delays() -> list[int]:
-    """Parse sequence step delays from config."""
-    raw = settings.sequence_step_delays
-    try:
-        return [int(d.strip()) for d in raw.split(",")]
-    except (ValueError, AttributeError):
-        return [3, 5, 7]

@@ -17,6 +17,7 @@ from amida_agent.models import (
     ActivityLog,
     Channel,
     OutreachDraft,
+    PEFirm,
     Prospect,
     ProspectStatus,
 )
@@ -64,14 +65,14 @@ def create_campaign(name: str) -> str:
     return campaign_id
 
 
-def add_lead_to_campaign(campaign_id: str, prospect: Prospect) -> str:
+def add_lead_to_campaign(campaign_id: str, prospect: Prospect, company_name: str = "") -> str:
     """Add a prospect as a lead to a Smartlead campaign. Returns lead_id."""
     lead_list = [
         {
             "email": prospect.email,
             "first_name": prospect.first_name,
             "last_name": prospect.last_name,
-            "company_name": prospect.title,
+            "company_name": company_name,
         }
     ]
     data = _smartlead_request(
@@ -160,15 +161,22 @@ def send_approved_draft(draft_id: int) -> None:
             campaign_id = create_campaign(campaign_name)
 
         # Configure the sequence step
-        step_delays = _get_step_delays()
-        delay = step_delays[draft.sequence_step - 1] if draft.sequence_step > 1 else 0
+        step_delays = settings.step_delays
+        delay = step_delays[draft.sequence_step - 2] if draft.sequence_step > 1 and len(step_delays) >= draft.sequence_step - 1 else 0
         add_sequence_step(campaign_id, draft.sequence_step, subject, body, delay_days=delay)
+
+        # Look up company name from PE firm
+        company_name = ""
+        if prospect.pe_firm_id:
+            firm = session.get(PEFirm, prospect.pe_firm_id)
+            if firm:
+                company_name = firm.name
 
         # Add lead
         if draft.smartlead_lead_id:
             lead_id = draft.smartlead_lead_id
         else:
-            lead_id = add_lead_to_campaign(campaign_id, prospect)
+            lead_id = add_lead_to_campaign(campaign_id, prospect, company_name=company_name)
 
         # Update draft with Smartlead IDs
         draft.smartlead_campaign_id = campaign_id
@@ -219,10 +227,3 @@ def fetch_campaign_stats(campaign_id: str) -> dict:
     return data
 
 
-def _get_step_delays() -> list[int]:
-    """Parse sequence step delays from config."""
-    raw = settings.sequence_step_delays
-    try:
-        return [int(d.strip()) for d in raw.split(",")]
-    except (ValueError, AttributeError):
-        return [3, 5, 7]

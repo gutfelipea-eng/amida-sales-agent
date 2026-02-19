@@ -62,8 +62,13 @@ def move_prospect(request: Request, prospect_id: int = Form(...), status: str = 
         if not prospect:
             return HTMLResponse("<p>Not found</p>", status_code=404)
 
+        try:
+            new_status = ProspectStatus(status)
+        except ValueError:
+            return HTMLResponse(f"<p>Invalid status: {status}</p>", status_code=400)
+
         old_status = prospect.status.value
-        prospect.status = ProspectStatus(status)
+        prospect.status = new_status
         prospect.updated_at = datetime.utcnow()
 
         session.add(ActivityLog(

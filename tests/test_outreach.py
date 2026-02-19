@@ -174,7 +174,7 @@ class TestSendApprovedDraft:
         ):
             mock_settings.smartlead_api_key = "test-key"
             mock_settings.smartlead_sending_account = ""
-            mock_settings.sequence_step_delays = "3,5,7"
+            mock_settings.step_delays = [3, 5, 7]
             send_approved_draft(approved_draft.id)
 
         db_session.refresh(approved_draft)
@@ -212,7 +212,7 @@ class TestSendApprovedDraft:
         ):
             mock_settings.smartlead_api_key = "key"
             mock_settings.smartlead_sending_account = ""
-            mock_settings.sequence_step_delays = "3,5,7"
+            mock_settings.step_delays = [3, 5, 7]
             send_approved_draft(approved_draft.id)
 
         # add_sequence_step should have been called with the edited body
@@ -520,7 +520,7 @@ class TestSequenceManager:
             patch("amida_agent.outreach.sequence_manager.get_session", _mock_get_session(db_session)),
             patch("amida_agent.outreach.sequence_manager.settings") as mock_settings,
         ):
-            mock_settings.sequence_step_delays = "3,5,7"
+            mock_settings.step_delays = [3, 5, 7]
             mock_settings.anthropic_api_key = "key"
             mock_settings.auto_approve_followups = False
             result = check_sequence_progression()
@@ -540,7 +540,7 @@ class TestSequenceManager:
             patch("amida_agent.outreach.sequence_manager.get_session", _mock_get_session(db_session)),
             patch("amida_agent.outreach.sequence_manager.settings") as mock_settings,
         ):
-            mock_settings.sequence_step_delays = "3,5,7"
+            mock_settings.step_delays = [3, 5, 7]
             mock_settings.anthropic_api_key = "key"
             mock_settings.auto_approve_followups = False
             result = check_sequence_progression()
@@ -562,7 +562,7 @@ class TestSequenceManager:
             patch("amida_agent.outreach.email_sender.fetch_lead_status", return_value={}),
             patch("amida_agent.notifications.notifier.notify_needs_approval"),
         ):
-            mock_settings.sequence_step_delays = "3,5,7"
+            mock_settings.step_delays = [3, 5, 7]
             mock_settings.anthropic_api_key = "key"
             mock_settings.auto_approve_followups = False
             mock_compose.return_value = ("Follow up subject", "Follow up body")
@@ -593,7 +593,7 @@ class TestSequenceManager:
             patch("amida_agent.ai.composer.compose_email") as mock_compose,
             patch("amida_agent.outreach.email_sender.fetch_lead_status", return_value={}),
         ):
-            mock_settings.sequence_step_delays = "3,5,7"
+            mock_settings.step_delays = [3, 5, 7]
             mock_settings.anthropic_api_key = "key"
             mock_settings.auto_approve_followups = True
             mock_compose.return_value = ("Subject", "Body")
@@ -622,7 +622,7 @@ class TestSequenceManager:
             patch("amida_agent.outreach.email_sender.fetch_lead_status") as mock_fetch,
             patch("amida_agent.notifications.notifier.notify_reply"),
         ):
-            mock_settings.sequence_step_delays = "3,5,7"
+            mock_settings.step_delays = [3, 5, 7]
             mock_settings.anthropic_api_key = "key"
             mock_settings.auto_approve_followups = False
             mock_fetch.return_value = {"replied": True, "reply_count": 1}
@@ -695,30 +695,21 @@ class TestHasReply:
         assert _has_reply(None) is False
 
 
-class TestGetStepDelays:
+class TestStepDelaysProperty:
     def test_default_delays(self):
-        from amida_agent.outreach.email_sender import _get_step_delays
+        from amida_agent.config import Settings
 
-        with patch("amida_agent.outreach.email_sender.settings") as mock_settings:
-            mock_settings.sequence_step_delays = "3,5,7"
-            result = _get_step_delays()
-
-        assert result == [3, 5, 7]
+        s = Settings(sequence_step_delays="3,5,7")
+        assert s.step_delays == [3, 5, 7]
 
     def test_custom_delays(self):
-        from amida_agent.outreach.email_sender import _get_step_delays
+        from amida_agent.config import Settings
 
-        with patch("amida_agent.outreach.email_sender.settings") as mock_settings:
-            mock_settings.sequence_step_delays = "2, 4, 6"
-            result = _get_step_delays()
-
-        assert result == [2, 4, 6]
+        s = Settings(sequence_step_delays="2, 4, 6")
+        assert s.step_delays == [2, 4, 6]
 
     def test_invalid_delays_fallback(self):
-        from amida_agent.outreach.email_sender import _get_step_delays
+        from amida_agent.config import Settings
 
-        with patch("amida_agent.outreach.email_sender.settings") as mock_settings:
-            mock_settings.sequence_step_delays = "invalid"
-            result = _get_step_delays()
-
-        assert result == [3, 5, 7]
+        s = Settings(sequence_step_delays="invalid")
+        assert s.step_delays == [3, 5, 7]
