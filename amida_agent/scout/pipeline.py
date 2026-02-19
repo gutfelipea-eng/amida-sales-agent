@@ -149,7 +149,10 @@ async def process_discovered_lead(
             status=ProspectStatus.ready,
         )
         session.add(prospect)
+        session.flush()  # Assigns prospect.id without committing
+
         session.add(ActivityLog(
+            prospect_id=prospect.id,
             action="auto_discovered",
             details=json.dumps({
                 "source": source,
@@ -161,17 +164,6 @@ async def process_discovered_lead(
         session.commit()
         session.refresh(prospect)
         prospect_id = prospect.id
-
-        # Link activity log to prospect
-        activity = session.exec(
-            select(ActivityLog).where(
-                ActivityLog.prospect_id == None,  # noqa: E711
-                ActivityLog.action == "auto_discovered",
-            ).order_by(ActivityLog.id.desc())  # type: ignore[union-attr]
-        ).first()
-        if activity:
-            activity.prospect_id = prospect_id
-            session.commit()
 
     logger.info("Saved prospect %d: %s (score %.2f)", prospect_id, profile["full_name"], relevance)
 

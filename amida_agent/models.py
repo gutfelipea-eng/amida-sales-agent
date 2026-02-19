@@ -118,11 +118,11 @@ class ActivityLog(SQLModel, table=True):
     __tablename__ = "activity_log"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    prospect_id: Optional[int] = Field(default=None, foreign_key="prospects.id")
+    prospect_id: Optional[int] = Field(default=None, foreign_key="prospects.id", index=True)
     action: str = ""  # e.g. "email_sent", "replied", "meeting_booked", "researched"
     channel: Optional[Channel] = None
     details: str = ""  # JSON string with extra context
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
 
 class SearchQuery(SQLModel, table=True):
@@ -131,7 +131,7 @@ class SearchQuery(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     query_type: str = ""  # "linkedin_jobs", "linkedin_people", "google_news"
     query_text: str = ""
-    pe_firm_id: Optional[int] = Field(default=None, foreign_key="pe_firms.id")
+    pe_firm_id: Optional[int] = Field(default=None, foreign_key="pe_firms.id", index=True)
     results_count: int = 0
     last_run_at: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)

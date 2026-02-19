@@ -28,12 +28,19 @@ def generate(
     model: str = "claude-sonnet-4-5-20250929",
 ) -> str:
     """Send a prompt to Claude and return the text response."""
-    client = get_client()
-    message = client.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        system=system,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return message.content[0].text
+    try:
+        client = get_client()
+        message = client.messages.create(
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        if not message.content:
+            logger.warning("Claude returned empty content")
+            return ""
+        return message.content[0].text
+    except Exception:
+        logger.exception("Claude API call failed")
+        return ""

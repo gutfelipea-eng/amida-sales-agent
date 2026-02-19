@@ -18,21 +18,25 @@ async def fetch_company_profile(linkedin_url: str) -> dict | None:
         logger.error("PROXYCURL_API_KEY not set")
         return None
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.get(
-            f"{PROXYCURL_BASE}/linkedin/company",
-            params={
-                "url": linkedin_url,
-                "use_cache": "if-recent",
-            },
-            headers={"Authorization": f"Bearer {settings.proxycurl_api_key}"},
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(
+                f"{PROXYCURL_BASE}/linkedin/company",
+                params={
+                    "url": linkedin_url,
+                    "use_cache": "if-recent",
+                },
+                headers={"Authorization": f"Bearer {settings.proxycurl_api_key}"},
+            )
 
-    if resp.status_code != 200:
-        logger.error("Proxycurl company error %d: %s", resp.status_code, resp.text[:200])
+        if resp.status_code != 200:
+            logger.error("Proxycurl company error %d: %s", resp.status_code, resp.text[:200])
+            return None
+
+        return resp.json()
+    except Exception:
+        logger.exception("Failed to fetch company profile: %s", linkedin_url)
         return None
-
-    return resp.json()
 
 
 def parse_company_data(raw: dict) -> dict:

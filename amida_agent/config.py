@@ -43,5 +43,13 @@ class Settings(BaseSettings):
     auto_approve_followups: bool = False  # require manual approval for follow-ups
     smartlead_sending_account: str = ""  # email account ID in Smartlead
 
+    @property
+    def step_delays(self) -> list[int]:
+        """Parse sequence step delays from config string."""
+        try:
+            return [int(d.strip()) for d in self.sequence_step_delays.split(",")]
+        except (ValueError, AttributeError):
+            return [3, 5, 7]
+
 
 settings = Settings()

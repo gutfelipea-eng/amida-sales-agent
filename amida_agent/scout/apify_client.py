@@ -105,6 +105,10 @@ async def _fetch_dataset(run_id: str, headers: dict) -> list[dict]:
         logger.error("Apify dataset error %d: %s", resp.status_code, resp.text[:200])
         return []
 
-    items = resp.json()
+    try:
+        items = resp.json()
+    except (ValueError, KeyError):
+        logger.exception("Failed to parse Apify dataset JSON for run %s", run_id)
+        return []
     logger.info("Fetched %d items from Apify run %s", len(items), run_id)
     return items if isinstance(items, list) else []

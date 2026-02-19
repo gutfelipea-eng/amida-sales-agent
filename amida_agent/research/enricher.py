@@ -19,25 +19,29 @@ async def fetch_linkedin_profile(linkedin_url: str) -> dict | None:
         logger.error("PROXYCURL_API_KEY not set")
         return None
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.get(
-            f"{PROXYCURL_BASE}/linkedin",
-            params={
-                "linkedin_profile_url": linkedin_url,
-                "use_cache": "if-recent",
-                "skills": "include",
-                "inferred_salary": "skip",
-                "personal_email": "include",
-                "personal_contact_number": "include",
-            },
-            headers={"Authorization": f"Bearer {settings.proxycurl_api_key}"},
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(
+                f"{PROXYCURL_BASE}/linkedin",
+                params={
+                    "linkedin_profile_url": linkedin_url,
+                    "use_cache": "if-recent",
+                    "skills": "include",
+                    "inferred_salary": "skip",
+                    "personal_email": "include",
+                    "personal_contact_number": "include",
+                },
+                headers={"Authorization": f"Bearer {settings.proxycurl_api_key}"},
+            )
 
-    if resp.status_code != 200:
-        logger.error("Proxycurl error %d: %s", resp.status_code, resp.text[:200])
+        if resp.status_code != 200:
+            logger.error("Proxycurl error %d: %s", resp.status_code, resp.text[:200])
+            return None
+
+        return resp.json()
+    except Exception:
+        logger.exception("Failed to fetch LinkedIn profile: %s", linkedin_url)
         return None
-
-    return resp.json()
 
 
 def parse_profile_data(raw: dict) -> dict:
@@ -56,7 +60,7 @@ def parse_profile_data(raw: dict) -> dict:
         starts = experiences[0]["starts_at"]
         try:
             hired_date = datetime(
-                year=starts.get("year", 2024),
+                year=starts.get("year", datetime.now().year),
                 month=starts.get("month", 1),
                 day=starts.get("day", 1),
             )
