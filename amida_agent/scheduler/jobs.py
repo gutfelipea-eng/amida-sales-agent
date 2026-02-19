@@ -58,6 +58,22 @@ def _job_news_monitor():
     _run_async(scan_all_firms())
 
 
+def _job_sequence_check():
+    """Scheduled job: check and progress email sequences."""
+    from amida_agent.outreach.sequence_manager import check_sequence_progression
+    logger.info("Scheduled job: sequence_check starting")
+    result = check_sequence_progression()
+    logger.info("Scheduled job: sequence_check done — %s", result)
+
+
+def _job_sync_smartlead():
+    """Scheduled job: sync reply/open status from Smartlead."""
+    from amida_agent.outreach.sequence_manager import sync_smartlead_statuses
+    logger.info("Scheduled job: sync_smartlead starting")
+    result = sync_smartlead_statuses()
+    logger.info("Scheduled job: sync_smartlead done — %s", result)
+
+
 def start_scheduler() -> BackgroundScheduler:
     """Start the background scheduler with all scout jobs."""
     global _scheduler
@@ -94,6 +110,24 @@ def start_scheduler() -> BackgroundScheduler:
         trigger=IntervalTrigger(hours=settings.scout_news_interval_hours),
         id="news_monitor",
         name=f"News monitor (every {settings.scout_news_interval_hours}h)",
+        replace_existing=True,
+    )
+
+    # Sequence progression: daily at 10:00
+    _scheduler.add_job(
+        _job_sequence_check,
+        trigger=CronTrigger(hour=10, minute=0),
+        id="sequence_check",
+        name="Sequence progression (daily 10:00)",
+        replace_existing=True,
+    )
+
+    # Smartlead status sync: every 6 hours
+    _scheduler.add_job(
+        _job_sync_smartlead,
+        trigger=IntervalTrigger(hours=6),
+        id="sync_smartlead",
+        name="Smartlead status sync (every 6h)",
         replace_existing=True,
     )
 

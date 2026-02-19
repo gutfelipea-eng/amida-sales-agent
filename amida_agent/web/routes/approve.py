@@ -95,6 +95,11 @@ def approve_draft(
             if prospect else f"Draft {draft_id} approved",
         )
 
+        # Trigger send for email channel
+        if draft.channel == Channel.email:
+            from amida_agent.outreach.email_sender import send_approved_draft
+            send_approved_draft(draft.id)
+
         drafts, prospects, firms = _get_queue_context(session)
 
     return templates.TemplateResponse("partials/approval_list.html", {

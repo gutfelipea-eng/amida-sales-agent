@@ -38,5 +38,10 @@ class Settings(BaseSettings):
     notification_threshold: float = 0.65
     scout_news_interval_hours: int = 12
 
+    # Outreach
+    sequence_step_delays: str = "3,5,7"  # days between steps 1→2, 2→3, 3→4
+    auto_approve_followups: bool = False  # require manual approval for follow-ups
+    smartlead_sending_account: str = ""  # email account ID in Smartlead
+
 
 settings = Settings()
